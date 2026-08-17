@@ -1,0 +1,47 @@
+# Phase 4 retrieval benchmark configuration.
+# All benchmark sampling and evaluation runs use these values for
+# reproducibility — change here, not via ad-hoc CLI flags, when running
+# the "official" benchmark.
+
+benchmark_size: 1000
+random_seed: 42
+top_k: 30            # candidates retrieved before any reranking/truncation
+eval_k_values: [1, 3, 5, 10]
+mrr_k: 10
+
+# Embedding model candidates for the REAL benchmark (requires Hugging Face
+# network access — not runnable inside the current dev sandbox; see
+# docs/retrieval-architecture.md for exact honesty status).
+embedding_models:
+  - name: "intfloat/multilingual-e5-base"
+    dimension: 768
+    notes: "Strong general multilingual retrieval baseline; E5 prefix convention required."
+  - name: "BAAI/bge-m3"
+    dimension: 1024
+    notes: "Larger, multi-granularity (dense+sparse+multi-vector); higher expected latency/memory."
+  - name: "ai4bharat/indic-sentence-bert-nli"
+    dimension: null  # to be filled in once benchmarked (Indic-family sentence encoder, dim TBD)
+    notes: "Indic-language-specialized; narrower coverage but possibly stronger on Kannada specifically."
+
+# Local sandbox-only proxy embedder (NOT a semantic model — see
+# packages/indexing/embeddings.py). Used only to verify code paths when
+# Hugging Face is unreachable.
+local_test_only_embedder: "TEST_ONLY:dim256"
+
+retrieval_modes:
+  - dense
+  - hybrid_rrf   # dense + BM25 sparse, fused via Reciprocal Rank Fusion
+
+rrf_k: 60   # standard RRF constant
+
+qdrant_collection_name: "voice_rag_hhgoa_benchmark"
+qdrant_distance: "Cosine"
+
+corpus:
+  target_corpus_size: 50000
+  chunks_dir: "data/processed/chunks_full"
+
+reranker:
+  enabled: false   # Phase 4 first benchmarks dense/hybrid WITHOUT a reranker,
+                    # per spec section 12 — reranker is added only if it
+                    # materially improves Recall/MRR without breaking latency

@@ -1,0 +1,38 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# macOS
+.DS_Store
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Generated data
+data/processed/
+data/raw/
+*.parquet
+*.jsonl
+
+# Local Qdrant
+qdrant_local/
+qdrant_test_1000/
+data/processed/qdrant_*
+
+# Benchmark outputs
+*benchmark_report*.json
+*qdrant*_checkpoint.json
+
+# IDE
+.vscode/
+.idea/
+
+# Local backup/recovery copies
+scripts/*.backup
+scripts/*.original
+scripts/*.before_*
+scripts/*.pre_*
