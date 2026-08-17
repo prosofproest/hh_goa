@@ -42,6 +42,11 @@ def main():
     parser.add_argument("--qdrant-url", default=None)
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument(
+        "--corpus",
+        default="data/processed/retrieval_corpus_subset.parquet",
+        help="Corpus parquet used to restore retrieved chunk text",
+    )
+    parser.add_argument(
         "--filter-language", default=None, help="Optional legitimate filter: 'target' or 'english'"
     )
     parser.add_argument(
@@ -78,17 +83,27 @@ def main():
 
     total_ms = (time.perf_counter() - t_total0) * 1000
 
-    # NOTE: corpus text is not stored redundantly here — the Qdrant payload
-    # in this schema does not carry chunk text (kept lean per spec section
-    # 6's metadata list). A production retrieve.py would join chunk_id back
-    # against the chunk parquet/a text store to populate "text"; that join
-    # is deliberately out of scope for this benchmark-focused script — see
-    # docs/retrieval-architecture.md "Known limitations".
+    # Restore actual evidence text from the corpus.
+    # Qdrant intentionally stores lean metadata. The retrieved chunk_id
+    # is joined back to the corpus so the final RAG response contains
+    # the actual evidence text.
+    import pandas as pd
+
+    corpus_path = REPO_ROOT / args.corpus
+    corpus_df = pd.read_parquet(corpus_path)
+
+    text_by_chunk_id = dict(
+        zip(
+            corpus_df["chunk_id"].astype(str),
+            corpus_df["text"].astype(str),
+        )
+    )
+
     retrieved_chunks = [
         {
             "chunk_id": r["chunk_id"],
             "score": round(r["score"], 6),
-            "text": None,  # see note above
+            "text": text_by_chunk_id.get(r["chunk_id"]),
             "metadata": r["payload"],
         }
         for r in results
